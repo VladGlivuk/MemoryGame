@@ -37,6 +37,10 @@
   font-size: 16px;
 }
 
+#timer {
+  font-size: 20px;
+}
+
 #grid {
   max-width: 100%;
   width: 100%;
