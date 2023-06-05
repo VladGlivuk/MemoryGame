@@ -11,6 +11,10 @@ class MatchGrid {
     this.flippedCards = [];
     this.matchedCards = 0;
 
+    this.isGameStarted = false;
+    this.startTime = null;
+    this.endTime = null;
+
     this.init();
   }
 
@@ -31,14 +35,8 @@ class MatchGrid {
     this.grid = newGrid;
   }
 
-  shuffleCards() {
-    for (let i = this.grid.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.grid[i], this.grid[j]] = [this.grid[j], this.grid[i]];
-    }
-  }
-
   renderGrid() {
+    const wrapperElement = document.getElementById('wrapper');
     const gridElement = document.getElementById('grid');
 
     gridElement.innerHTML = '';
@@ -53,6 +51,9 @@ class MatchGrid {
       gridElement.appendChild(card);
     });
 
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card) => card.addEventListener('click', () => this.flipCard(card)));
+
     const theme = this.theme || {};
     const defaultTheme = {
       fontColor: '#000',
@@ -60,11 +61,83 @@ class MatchGrid {
     };
 
     //set styles
+    //grid
     gridElement.style.gridTemplate = `repeat(${this.rows}, 1fr)/repeat(${this.columns}, 1fr)`;
     gridElement.style.maxWidth = `${this.width}px`;
     gridElement.style.maxHeight = `${this.height}px`;
     gridElement.style.color = theme.fontColor || defaultTheme.fontColor;
-    gridElement.style.backgroundColor = theme.backgroundColor || defaultTheme.backgroundColor;
+    //wrapper
+    wrapperElement.style.background = theme.backgroundColor || defaultTheme.backgroundColor;
+  }
+
+  flipCard(card) {
+    const index = parseInt(card.dataset.index);
+    const selectedCard = this.grid[index];
+
+    if (selectedCard.isMatched || selectedCard.isFlipped || this.flippedCards.length === 2) return;
+
+    this.flipAnimation(card, selectedCard.value, false);
+    selectedCard.isFlipped = true;
+    this.flippedCards.push(index);
+
+    if (this.flippedCards.length === 2) {
+      const [firstChosenCardValue, secondChosenCardValue] = this.flippedCards;
+      const firstCard = this.grid[firstChosenCardValue];
+      const secondCard = this.grid[secondChosenCardValue];
+
+      if (firstCard.value === secondCard.value) {
+        firstCard.isMatched = true;
+        secondCard.isMatched = true;
+        this.matchedCards += 2;
+        this.flippedCards = [];
+
+        if (this.matchedCards === this.grid.length) {
+          this.endGame();
+        }
+      } else {
+        setTimeout(() => {
+          this.flipAnimation(document.querySelector(`[data-index="${firstChosenCardValue}"]`), '?', true);
+          this.flipAnimation(document.querySelector(`[data-index="${secondChosenCardValue}"]`), '?', true);
+          firstCard.isFlipped = false;
+          secondCard.isFlipped = false;
+          this.flippedCards = [];
+        }, 1000);
+      }
+    }
+  }
+
+  flipAnimation(card, value, isWrongPair) {
+    anime({
+      targets: card,
+      innerHTML: value,
+      round: 2,
+      backgroundColor: '#00D100',
+      color: this.theme.fontColor,
+      easing: 'easeInOutQuad',
+      duration: 200,
+      complete: (anim) => {
+        if (value === '?') {
+          const targetBackgroundColor = !!isWrongPair ? '#999' : '#eee';
+          const targetFontColor = !!isWrongPair ? this.theme.fontColor : '#eee';
+
+          anim.animatables[0].target.style.backgroundColor = targetBackgroundColor;
+          anim.animatables[0].target.style.color = targetFontColor;
+          card.textContent = '?';
+        }
+      },
+    });
+  }
+
+  endGame() {
+    clearTimeout(this.timer);
+    this.isGameStarted = false;
+    this.endTime = new Date();
+    const timeElapsed = (this.endTime - this.startTime) / 1000;
+
+    setTimeout(() => {
+      alert(`Congratulations! You found all the matching elements.
+      Time has passed: ${timeElapsed.toFixed(2)} seconds.`);
+    }, 500);
   }
 }
 
@@ -86,10 +159,10 @@ const createCard = (value) => ({
 const matchGrid = new MatchGrid({
   width: 1200,
   height: 800,
-  rows: 8,
-  columns: 8,
+  rows: 2,
+  columns: 2,
   theme: {
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '2f2f2f',
     fontColor: '#333',
   },
 });
