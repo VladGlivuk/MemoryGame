@@ -21,6 +21,12 @@ class MatchGrid {
   init() {
     this.createGrid();
     this.renderGrid();
+
+    const startBtn = document.getElementById('startBtn');
+    startBtn.addEventListener('click', () => this.startGame());
+
+    const restartBtn = document.getElementById('restartBtn');
+    restartBtn.addEventListener('click', () => this.restartGame());
   }
 
   createGrid() {
@@ -128,6 +134,28 @@ class MatchGrid {
     });
   }
 
+  startGame() {
+    if (this.isGameStarted) return;
+
+    this.isGameStarted = true;
+    this.startTime = new Date();
+  }
+
+  restartGame() {
+    clearTimeout(this.timer);
+
+    this.grid = [];
+    this.flippedCards = [];
+    this.matchedCards = 0;
+    this.isPaused = false;
+    this.isGameStarted = false;
+    this.startTime = null;
+    this.endTime = null;
+
+    this.createGrid();
+    this.renderGrid();
+  }
+
   endGame() {
     clearTimeout(this.timer);
     this.isGameStarted = false;
@@ -157,8 +185,8 @@ const createCard = (value) => ({
 });
 
 const matchGrid = new MatchGrid({
-  width: 1200,
-  height: 800,
+  width: 800,
+  height: 600,
   rows: 2,
   columns: 2,
   theme: {

@@ -14,9 +14,27 @@
   height: 100vh;
 }
 
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  column-gap: 12px;
+  margin: 20px 0;
+}
+
 .title {
   text-align: center;
-  margin-bottom: 18px;
+}
+
+.button {
+  font-size: 20px;
+  background-color: #e7e7e7;
+  color: black;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 15px 32px;
+  font-size: 16px;
 }
 
 #grid {
