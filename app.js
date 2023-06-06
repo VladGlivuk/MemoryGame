@@ -15,6 +15,7 @@ class MatchGrid {
     this.isPaused = false;
     this.timer = null;
     this.startTime = null;
+    this.remainingTime = new Date();
 
     this.init();
   }
@@ -22,9 +23,6 @@ class MatchGrid {
   init() {
     this.createGrid();
     this.renderGrid();
-
-    const startBtn = document.getElementById('startButton');
-    startBtn.addEventListener('click', () => this.startGame());
   }
 
   createGrid() {
@@ -42,6 +40,8 @@ class MatchGrid {
   renderGrid() {
     const wrapperElement = document.getElementById('wrapper');
     const gridElement = document.getElementById('grid');
+    const contentElement = document.getElementById('content');
+    const startBtn = document.getElementById('startButton');
 
     gridElement.innerHTML = '';
 
@@ -55,8 +55,19 @@ class MatchGrid {
       gridElement.appendChild(card);
     });
 
+    startBtn.addEventListener('click', () => this.startGame());
     const cards = document.querySelectorAll('.card');
     cards.forEach((card) => card.addEventListener('click', () => this.flipCard(card)));
+    contentElement.addEventListener('mouseleave', () => {
+      if (this.isGameStarted && !this.isPaused) {
+        this.pauseGame();
+      }
+    });
+    contentElement.addEventListener('mouseenter', () => {
+      if (this.isGameStarted && this.isPaused) {
+        this.resumeGame();
+      }
+    });
 
     const theme = this.theme || {};
     const defaultTheme = {
@@ -67,6 +78,7 @@ class MatchGrid {
     //set styles
     //grid
     gridElement.style.gridTemplate = `repeat(${this.rows}, 1fr)/repeat(${this.columns}, 1fr)`;
+    contentElement.style.maxWidth = `${this.width}px`;
     gridElement.style.maxWidth = `${this.width}px`;
     gridElement.style.maxHeight = `${this.height}px`;
     gridElement.style.color = theme.fontColor || defaultTheme.fontColor;
@@ -75,6 +87,7 @@ class MatchGrid {
   }
 
   flipCard(card) {
+
     if (!this.isGameStarted) return;
     const index = parseInt(card.dataset.index);
     const selectedCard = this.grid[index];
@@ -132,24 +145,6 @@ class MatchGrid {
     });
   }
 
-  endGame(isSuccessful = false) {
-    clearTimeout(this.timer);
-    console.log('file: app.js:155  MatchGrid  this.timer:', this.timer);
-    this.isGameStarted = false;
-
-    const endTime = new Date();
-    const timeElapsed = +((endTime.getTime() - this.startTime.getTime()) / 1000).toFixed(2);
-
-    const alertText = isSuccessful
-      ? `Congratulations! You found all the matching elements.
-    Time has passed: ${timeElapsed} seconds.`
-      : `The time has run out, please try again!`;
-
-    setTimeout(() => {
-      alert(alertText);
-    }, 500);
-  }
-
   startGame() {
     if (this.isGameStarted) return;
 
@@ -166,33 +161,64 @@ class MatchGrid {
 
     this.isGameStarted = true;
     this.startTime = new Date();
-    this.startTimer();
+    this.startTimer(this.timeLimit);
+  }
+  endGame(isSuccessful = false) {
+    clearTimeout(this.timer);
+    this.isGameStarted = false;
+
+    const endTime = new Date();
+    const timeElapsed = +((endTime.getTime() - this.startTime.getTime()) / 1000).toFixed(2);
+
+    const alertText = isSuccessful
+      ? `Congratulations! You found all the matching elements.
+    Time has passed: ${timeElapsed} seconds.`
+      : `The time has run out, please try again!`;
+
+    setTimeout(() => {
+      alert(alertText);
+    }, 500);
   }
 
-  startTimer() {
+  startTimer(durationTime) {
     const timeElement = document.querySelector('#timer');
-    let time = this.timeLimit;
-    console.log('file: app.js:176  MatchGrid  time:', time);
+    let timer = durationTime;
     let minutes = 0;
     let seconds = 0;
 
     this.timer = setInterval(() => {
-      minutes = parseInt(time / 60, 10);
-      console.log('file: app.js:183  MatchGrid  minutes:', minutes);
-      seconds = parseInt(time % 60, 10);
-      console.log('file: app.js:185  MatchGrid  seconds:', seconds);
+      minutes = parseInt(timer / 60, 10);
+      seconds = parseInt(timer % 60, 10);
 
       minutes = minutes < 10 ? '0' + minutes : minutes;
-      seconds = seconds < 10 ? '0' + seconds : seconds;
+
+      if (seconds < 0) seconds = '00';
+      else seconds = seconds < 10 ? '0' + seconds : seconds;
 
       const timeLeft = minutes + ':' + seconds;
       timeElement.textContent = timeLeft;
 
-      if (--time < 0) {
-        time = this.timeLimit;
+      if (--timer < 0) {
+        timer = durationTime;
         this.endGame();
       }
     }, 1000);
+  }
+
+  pauseGame() {
+    if (this.isPaused || !this.isGameStarted) return;
+
+    this.isPaused = true;
+    const endTime = new Date();
+    const timeElapsed = +((endTime.getTime() - this.startTime.getTime()) / 1000).toFixed(2);
+    this.remainingTime = this.timeLimit - timeElapsed;
+    clearInterval(this.timer);
+  }
+
+  resumeGame() {
+    if (!this.isPaused) return;
+    this.isPaused = false;
+    this.startTimer(this.remainingTime);
   }
 }
 
@@ -212,11 +238,11 @@ const createCard = (value) => ({
 });
 
 const matchGrid = new MatchGrid({
-  width: 800,
+  width: 1200,
   height: 600,
-  rows: 2,
-  columns: 2,
-  timeLimit: 20,
+  rows: 4,
+  columns: 4,
+  timeLimit: 60,
   theme: {
     backgroundColor: '2f2f2f',
     fontColor: '#333',
